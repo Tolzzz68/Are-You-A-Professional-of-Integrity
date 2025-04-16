@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enron Integrity Challenge</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    body {
+      font-family: 'Press Start 2P', cursive;
+      background-color: #0f2027;
+      background-image: url('https://images.unsplash.com/photo-1581092580497-e0d23cbdfd49?fit=crop&w=1200&q=80');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      color: #f1f1f1;
+      padding: 20px;
+      text-align: center;
+      transition: background-image 0.5s ease-in-out;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: rgba(30,42,56,0.9);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .hidden { display: none; }
+    .button {
+      background: #ffcc00;
+      color: #000;
+      padding: 15px 25px;
+      border: 3px solid #000;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 10px;
+      font-size: 14px;
+    }
+    .button:hover { background: #ffe066; }
+    .question {
+      background: #2f4f4f;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    .feedback { margin-top: 15px; font-size: 13px; color: #ffcc00; font-style: italic; }
+    .level { font-size: 16px; margin: 20px 0; color: #ffcc00; }
+    .result { font-weight: bold; padding: 10px; margin-top: 20px; border-radius: 10px; font-size: 16px; }
+    .success { background: #28a745; color: white; }
+    .fail { background: #dc3545; color: white; }
+    .stats { margin-top: 10px; font-weight: bold; }
+    #certificate {
+      margin-top: 30px;
+      border: 4px double #ffcc00;
+      padding: 30px;
+      border-radius: 15px;
+      background: #222;
+      display: none;
+    }
+    #certificate h2 { color: #ffcc00; font-size: 20px; }
+    #character { width: 120px; margin: 10px auto; display: block; animation: bounce 1s infinite alternate; }
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-10px); }
+    }
+  </style>
+</head>
+<body id="quizBody">
+<div class="container">
+  <h1>🧠 Enron Integrity Challenge</h1>
+  <p>Enter your name to begin your ethical journey.</p>
+  <input type="text" id="playerName" placeholder="Your Name" style="padding:10px; font-family:'Press Start 2P'; font-size:12px; border-radius:10px; margin-bottom:10px;">
+  <br>
+  <img src="https://cdn-icons-png.flaticon.com/512/1998/1998610.png" alt="character" id="character">
+  <button class="button" onclick="startGame()">🚀 Start Challenge</button>
+  <div id="game" class="hidden">
+    <div class="level" id="levelName">Level: Beginner</div>
+    <div id="question-container"></div>
+    <div id="feedback" class="feedback hidden"></div>
+    <button class="button" onclick="nextQuestion()">Next</button>
+    <div class="stats">⭐ Score: <span id="score">0</span></div>
+    <div id="result" class="result hidden"></div>
+  </div>
+  <div id="certificate">
+    <h2>🏅 Workplace Integrity Status</h2>
+    <p><strong>Name:</strong> <span id="showName"></span></p>
+    <p id="finalStatus"></p>
+    <p><strong>Final Score:</strong> <span id="finalScore"></span></p>
+    <p id="evaluation"></p>
+  </div>
+</div>
+<script>
+const allQuestions = [
+  { q: "You see your coworker hiding receipts. Do you report them?", correct: true, consequence: "Ignoring this could lead to serious financial misreporting." },
+  { q: "You're asked to backdate a report. Do you refuse?", correct: true, consequence: "Backdating documents is fraud—even if your manager says it's okay." },
+  { q: "Your manager says, 'Don't worry, just sign it.' Do you read it first?", correct: true, consequence: "Blindly signing documents can make you legally responsible." },
+  { q: "A colleague offers to share their password. Do you accept?", correct: false, consequence: "This violates IT security policies and could lead to termination." },
+  { q: "A manager offers you a bonus for not reporting an irregularity. Do you accept?", correct: false, consequence: "This could be seen as a bribe and may cost you your job and reputation." },
+  { q: "You notice false data in a report. Do you correct it even if it upsets your boss?", correct: true, consequence: "Accuracy is key to ethical accounting practices." },
+  { q: "You're asked to overlook a mistake to save the company money. Do you let it slide?", correct: false, consequence: "Covering up mistakes contributes to long-term damage." },
+  { q: "Performance reports are being edited dishonestly. Do you speak up?", correct: true, consequence: "Staying silent helps unethical practices thrive." },
+  { q: "You’re told your job is at risk if you report fraud. Do you report it anyway?", correct: true, consequence: "True integrity sometimes comes with risk, but it's the right thing." },
+  { q: "You’re offered a promotion to stay silent about ethical issues. Do you stay silent?", correct: false, consequence: "Gaining from unethical silence is still complicity." },
+  { q: "You find your signature on a report you didn’t approve. Do you report it?", correct: true, consequence: "Unauthorized use of your name can have legal consequences." },
+  { q: "You suspect data manipulation. Do you bring it up even without proof?", correct: true, consequence: "Raising concerns is the first step to stopping corruption." }
+];
+const levels = ["Beginner", "Intermediate", "Expert"];
+const scenes = [
+  'https://images.unsplash.com/photo-1560264357-8f0c0c2173e4?fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1581091012184-d8a55c4e57c4?fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1573164713894-1b8a2b5b41aa?fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1603791440384-56cd371ee9a7?fit=crop&w=1200&q=80'
+];
+let current = 0;
+let score = 0;
+let username = '';
+function startGame() {
+  username = document.getElementById('playerName').value.trim();
+  if (!username) {
+    alert("Please enter your name to begin.");
+    return;
+  }
+  current = 0;
+  score = 0;
+  document.getElementById('certificate').style.display = 'none';
+  document.getElementById('score').textContent = score;
+  document.getElementById('game').classList.remove('hidden');
+  showQuestion();
+}
+function showQuestion() {
+  const container = document.getElementById('question-container');
+  container.innerHTML = '';
+  const q = allQuestions[current];
+  const questionEl = document.createElement('div');
+  questionEl.className = 'question';
+  questionEl.innerHTML = `<p>${q.q}</p>`;
+  const yesBtn = document.createElement('button');
+  yesBtn.className = 'button';
+  yesBtn.textContent = 'Yes';
+  yesBtn.onclick = () => checkAnswer(true);
+  const noBtn = document.createElement('button');
+  noBtn.className = 'button';
+  noBtn.textContent = 'No';
+  noBtn.onclick = () => checkAnswer(false);
+  container.appendChild(questionEl);
+  container.appendChild(yesBtn);
+  container.appendChild(noBtn);
+  const levelIdx = current < 4 ? 0 : current < 8 ? 1 : 2;
+  document.getElementById('levelName').textContent = `Level: ${levels[levelIdx]}`;
+  document.body.style.backgroundImage = `url('${scenes[current % scenes.length]}')`;
+  document.getElementById('feedback').classList.add('hidden');
+}
+function checkAnswer(answer) {
+  const q = allQuestions[current];
+  const feedback = document.getElementById('feedback');
+  if (answer === q.correct) {
+    score++;
+    feedback.textContent = `✅ Correct! ${q.consequence}`;
+  } else {
+    feedback.textContent = `❌ That wasn't the best choice. ${q.consequence}`;
+  }
+  feedback.classList.remove('hidden');
+  document.getElementById('score').textContent = score;
+}
+function nextQuestion() {
+  current++;
+  if (current < allQuestions.length) {
+    showQuestion();
+  } else {
+    endGame();
+  }
+}
+function endGame() {
+  const percent = (score / allQuestions.length) * 100;
+  let title = '', message = '';
+  if (percent >= 90) {
+    title = '🦸 You are full of integrity!';
+    message = 'You consistently make ethical decisions—even under pressure. Your coworkers can trust you to always do the right thing.';
+  } else if (percent >= 70) {
+    title = '🕵️ You mean well, but watch your step';
+    message = 'You generally try to do the right thing but may be influenced by risk or fear. Review some gray areas to stay sharp.';
+  } else {
+    title = '🦊 You’re a bit of a sneaky one...';
+    message = 'You may need to rethink some of your choices. Ethics matter, and small decisions can have big consequences.';
+  }
+  document.getElementById('game').classList.add('hidden');
+  document.getElementById('certificate').style.display = 'block';
+  document.getElementById('finalStatus').textContent = title;
+  document.getElementById('finalScore').textContent = `${score}/${allQuestions.length}`;
+  document.getElementById('evaluation').textContent = message;
+  document.getElementById('showName').textContent = username;
+}
+</script>
+</body>
+</html>
